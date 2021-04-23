@@ -1,0 +1,191 @@
+package com.example.a7minuteworkout
+
+import android.os.Bundle
+import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.example.a7minuteworkout.databinding.ActivityBmiBinding
+import java.math.BigDecimal
+import java.math.RoundingMode
+
+class BMIActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityBmiBinding
+
+    val METRIC_UNITS_VIEW = "METRIC_UNIT_VIEW"
+    val US_UNITS_VIEW = "US_UNIT_VIEW"
+    var currentVisibleView: String = METRIC_UNITS_VIEW
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        binding = ActivityBmiBinding.inflate(layoutInflater)
+
+        super.onCreate(savedInstanceState)
+        setContentView(binding.root)
+
+        setSupportActionBar(binding.toolbarBmiActivity)
+        val actionBar = supportActionBar
+
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true)
+            actionBar.title = "CALCULATE BMI"
+        }
+
+        binding.toolbarBmiActivity.setNavigationOnClickListener {
+            onBackPressed()
+        }
+
+        binding.btnCalculateUnits.setOnClickListener {
+            if (currentVisibleView == METRIC_UNITS_VIEW) {
+                if (validateMetricUnits()) {
+                    val heightValue: Float =
+                        binding.etMetricUnitHeight.text.toString().toFloat() / 100
+                    val weightValue: Float = binding.etMetricUnitWeight.text.toString().toFloat()
+
+                    val bmi = weightValue / (heightValue * heightValue)
+                    displayBMIResult(bmi)
+                } else {
+                    Toast.makeText(this, "Please enter a valid value", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                if (validateUsUnits()) {
+                    val usUnitHeightValueFeet: String =
+                        binding.etUsUnitHeightFeet.text.toString() // Height Feet value entered in EditText component.
+                    val usUnitHeightValueInch: String =
+                        binding.etUsUnitHeightInch.text.toString() // Height Inch value entered in EditText component.
+                    val usUnitWeightValue: Float = binding.etUsUnitWeight.text.toString()
+                        .toFloat() // Weight value entered in EditText component.
+
+                    // Here the Height Feet and Inch values are merged and multiplied by 12 for converting it to inches.
+                    val heightValue =
+                        usUnitHeightValueInch.toFloat() + usUnitHeightValueFeet.toFloat() * 12
+
+                    // This is the Formula for US UNITS result.
+                    // Reference Link : https://www.cdc.gov/healthyweight/assessing/bmi/childrens_bmi/childrens_bmi_formula.html
+                    val bmi = 703 * (usUnitWeightValue / (heightValue * heightValue))
+
+                    displayBMIResult(bmi) // Displaying the result into UI
+                } else {
+                    Toast.makeText(this, "Please enter valid values", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+        }
+
+        makeVisibleMetricUnitsView()
+
+        binding.rgUnits.setOnCheckedChangeListener { group, checkedId ->
+            if (checkedId == R.id.rbMetricUnits) {
+                makeVisibleMetricUnitsView()
+            } else {
+                makeVisibleUsUnitsView()
+            }
+        }
+    }
+
+    private fun makeVisibleMetricUnitsView() {
+        currentVisibleView = METRIC_UNITS_VIEW // Current View is updated here.
+        binding.llMetricUnitsView.visibility = View.VISIBLE // METRIC UNITS VIEW is Visible
+        binding.llUsUnitsView.visibility = View.GONE // US UNITS VIEW is hidden
+
+        binding.etMetricUnitHeight.text!!.clear() // height value is cleared if it is added.
+        binding.etMetricUnitWeight.text!!.clear() // weight value is cleared if it is added.
+
+        binding.tvYourBMI.visibility = View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIValue.visibility =
+            View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIType.visibility = View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIDescription.visibility =
+            View.INVISIBLE // Result is cleared and the labels are hidden
+    }
+
+    private fun makeVisibleUsUnitsView() {
+        currentVisibleView = US_UNITS_VIEW // Current View is updated here.
+        binding.llMetricUnitsView.visibility = View.GONE // METRIC UNITS VIEW is hidden
+        binding.llUsUnitsView.visibility = View.VISIBLE // US UNITS VIEW is Visible
+
+        binding.etUsUnitWeight.text!!.clear() // weight value is cleared.
+        binding.etUsUnitHeightFeet.text!!.clear() // height feet value is cleared.
+        binding.etUsUnitHeightInch.text!!.clear() // height inch is cleared.
+
+        binding.tvYourBMI.visibility = View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIValue.visibility =
+            View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIType.visibility = View.INVISIBLE // Result is cleared and the labels are hidden
+        binding.tvBMIDescription.visibility =
+            View.INVISIBLE // Result is cleared and the labels are hidden
+    }
+
+
+    private fun validateUsUnits(): Boolean {
+        var isValid = true
+
+        when {
+            binding.etUsUnitWeight.text.toString().isEmpty() -> {
+                isValid = false
+            }
+            binding.etUsUnitHeightFeet.text.toString().isEmpty() -> {
+                isValid = false
+            }
+            binding.etUsUnitHeightInch.text.toString().isEmpty() -> {
+                isValid = false
+            }
+        }
+
+        return isValid
+    }
+
+    private fun displayBMIResult(bmi: Float) {
+        var bmiLabel: String
+        var bmiDescription: String
+
+        if (bmi.compareTo(15f) <= 0) {
+            bmiLabel = "Very severely underweight"
+            bmiDescription = "Oops! You really need to take better care of yourself! Eat more!"
+        } else if (bmi.compareTo(15f) > 0 && bmi.compareTo(16f) <= 0) {
+            bmiLabel = "Severely underweight"
+            bmiDescription = "Oops!You really need to take better care of yourself! Eat more!"
+        } else if (bmi.compareTo(16f) > 0 && bmi.compareTo(18.5f) <= 0) {
+            bmiLabel = "Underweight"
+            bmiDescription = "Oops! You really need to take better care of yourself! Eat more!"
+        } else if (bmi.compareTo(18.5f) > 0 && bmi.compareTo(25f) <= 0) {
+            bmiLabel = "Normal"
+            bmiDescription = "Congratulations! You are in a good shape!"
+        } else if (bmi.compareTo(25f) > 0 && bmi.compareTo(30f) <= 0) {
+            bmiLabel = "Overweight"
+            bmiDescription = "Oops! You really need to take care of your yourself! Workout maybe!"
+        } else if (bmi.compareTo(30f) > 0 && bmi.compareTo(35f) <= 0) {
+            bmiLabel = "Obese Class | (Moderately obese)"
+            bmiDescription = "Oops! You really need to take care of your yourself! Workout maybe!"
+        } else if (bmi.compareTo(35f) > 0 && bmi.compareTo(40f) <= 0) {
+            bmiLabel = "Obese Class || (Severely obese)"
+            bmiDescription = "OMG! You are in a very dangerous condition! Act now!"
+        } else {
+            bmiLabel = "Obese Class ||| (Very Severely obese)"
+            bmiDescription = "OMG! You are in a very dangerous condition! Act now!"
+        }
+
+        binding.llDiplayBMIResult.visibility = View.VISIBLE
+
+        /*binding.tvYourBMI.visibility = View.VISIBLE
+        binding.tvBMIValue.visibility = View.VISIBLE
+        binding.tvBMIType.visibility = View.VISIBLE
+        binding.tvBMIDescription.visibility = View.VISIBLE
+*/
+        // This is used to round the result value to 2 decimal values after "."
+        val bmiValue = BigDecimal(bmi.toDouble()).setScale(2, RoundingMode.HALF_EVEN).toString()
+
+        binding.tvBMIValue.text = bmiValue // Value is set to TextView
+        binding.tvBMIType.text = bmiLabel // Label is set to TextView
+        binding.tvBMIDescription.text = bmiDescription // Description is set to TextView
+    }
+
+    private fun validateMetricUnits(): Boolean {
+        var isValid = true
+
+        if (binding.etMetricUnitWeight.text.toString().isEmpty())
+            isValid = false
+        else if (binding.etMetricUnitHeight.text.toString().isEmpty())
+            isValid = false
+
+        return isValid
+    }
+}
